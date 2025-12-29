@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P-V热力学过程模拟器</title>
+    <link rel="stylesheet" href="/Scroched_Dream/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="bg-blur-container">
+        <div class="bg-blur"></div>
+    </div>
+
+    <h1 class="title">P-V热力学过程模拟器</h1>
+    <div class="container">
+        <!-- 介绍面板 -->
+        <div class="panel intro-panel animate-in">
+            <h3 id="introTitle">等温过程</h3>
+            <div id="introContent" class="intro-content">
+                等温过程是指热力学系统在恒定温度下发生的过程。在理想气体的等温过程中，压强与体积成反比，满足玻意耳定律：P₁V₁ = P₂V₂。此过程中系统的内能保持不变，吸收的热量全部用于对外做功。
+            </div>
+        </div>
+
+        <!-- 知识点强化面板 -->
+        <div class="panel knowledge-panel animate-in" style="animation-delay: 0.15s">
+            <h3 class="knowledge-title">知识点解析</h3>
+            <div id="knowledgeContent">
+                <div class="knowledge-item">
+                    <strong>玻意耳定律</strong>：一定质量的气体，在温度不变时，压强与体积成反比（P₁V₁ = P₂V₂）
+                </div>
+                <div class="knowledge-item">
+                    <strong>内能变化</strong>：理想气体内能只与温度有关，等温过程中ΔU = 0
+                </div>
+                <div class="knowledge-item">
+                    <strong>能量关系</strong>：Q = W，吸收的热量全部用于对外做功
+                </div>
+            </div>
+        </div>
+
+        <!-- 类型选择面板 -->
+        <div class="panel type-select animate-in" style="animation-delay: 0.1s">
+            <h3>类型选择</h3>
+            <label for="cycleType">循环类型</label>
+            <select id="cycleType">
+                <option value="single">单一过程</option>
+                <option value="carnot">卡诺循环</option>
+                <option value="otto">奥托循环</option>
+            </select>
+
+            <label for="processType" id="processTypeLabel">过程类型</label>
+            <select id="processType">
+                <option value="isothermal">等温过程</option>
+                <option value="isobaric">等压过程</option>
+                <option value="isochoric">等容过程</option>
+                <option value="adiabatic">绝热过程</option>
+            </select>
+        </div>
+
+        <!-- 参数控制面板 -->
+        <div class="panel param-control animate-in" style="animation-delay: 0.2s">
+            <h3>参数设置</h3>
+            
+            <!-- 单一过程参数组 -->
+            <div id="singleParamGroup" class="param-group active">
+                <label for="P1">初始压力 P₁ (Pa)</label>
+                <input type="number" id="P1" value="100000" min="1000" max="1000000">
+
+                <label for="V1">初始体积 V₁ (m³)</label>
+                <input type="number" id="V1" value="0.1" min="0.01" max="1" step="0.01">
+
+                <label for="P2">终止压力 P₂ (Pa)</label>
+                <input type="text" id="P2" value="由等温方程计算">
+
+                <label for="V2">终止体积 V₂ (m³)</label>
+                <input type="number" id="V2" value="0.5" min="0.01" max="1" step="0.01">
+            </div>
+
+            <!-- 卡诺循环参数组 -->
+            <div id="carnotParamGroup" class="param-group">
+                <label for="carnotP1">初始压力 P₁ (Pa)</label>
+                <input type="number" id="carnotP1" value="100000" min="1000" max="1000000">
+
+                <label for="carnotV1">初始体积 V₁ (m³)</label>
+                <input type="number" id="carnotV1" value="0.1" min="0.01" max="1" step="0.01">
+
+                <label for="carnotTh">高温热源温度 Tₕ (K)</label>
+                <input type="number" id="carnotTh" value="600" min="300" max="1000">
+
+                <label for="carnotTc">低温热源温度 Tc (K)</label>
+                <input type="number" id="carnotTc" value="300" min="100" max="500">
+
+                <label for="carnotExpansionRatio">体积膨胀比 (V₂/V₁)</label>
+                <input type="number" id="carnotExpansionRatio" value="2" min="1.1" max="5" step="0.1">
+            </div>
+
+            <!-- 奥托循环参数组 -->
+            <div id="ottoParamGroup" class="param-group">
+                <label for="ottoP1">初始压力 P₁ (Pa)</label>
+                <input type="number" id="ottoP1" value="100000" min="10000" max="500000">
+
+                <label for="ottoV1">初始体积 V₁ (m³)</label>
+                <input type="number" id="ottoV1" value="0.1" min="0.01" max="1" step="0.01">
+
+                <label for="ottoCompressionRatio">压缩比 (V₁/V₂)</label>
+                <input type="number" id="ottoCompressionRatio" value="3" min="1.5" max="10" step="0.1">
+
+                <label for="ottoPressureRatio">等容升压比 (P₃/P₂)</label>
+                <input type="number" id="ottoPressureRatio" value="2" min="1.2" max="5" step="0.1">
+            </div>
+
+            <button id="runBtn" class="sim-btn">开始模拟</button>
+        </div>
+
+        <!-- 绘图面板 -->
+        <div class="panel canvas-panel animate-in" style="animation-delay: 0.3s">
+            <canvas id="pvCanvas"></canvas>
+        </div>
+    </div>
+
+    <!-- 活塞动画模块（新增核心） -->
+    <div class="piston-container animate-in" style="animation-delay: 0.4s">
+        <h3>活塞动画模拟</h3>
+        <div class="piston-animation">
+            <div class="piston-cylinder" id="pistonCylinder">
+                <div class="piston-head" id="pistonHead"></div>
+                <div class="piston-rod"></div>
+                <div class="piston-pressure" id="pistonPressure">0 Pa</div>
+            </div>
+        </div>
+        <p>动画显示热力学过程中活塞的运动、内部压强变化和温度变化（颜色表示）</p>
+    </div>
+
+    <!-- 结果显示 -->
+    <div class="result animate-in" style="animation-delay: 0.4s">
+        <div class="result-item">做功 W: <span id="Wout">0</span> J</div>
+        <div class="result-item">内能变化 ΔU: <span id="Uout">0</span> J</div>
+        <div class="result-item">总吸热 Q: <span id="Qout">0</span> J</div>
+        <div class="result-item">循环效率 η: <span id="etaOut">0</span> %</div>
+    </div>
+
+    <!-- 悬停提示 -->
+    <div id="tooltip"></div>
+
+    <script src="/Scroched_Dream/script.js"></script>
+</body>
+</html>
