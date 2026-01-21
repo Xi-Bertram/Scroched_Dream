@@ -280,10 +280,11 @@ function simulateCarnot() {
     const expansionRatio = +carnotExpansionRatio.value;
     const V2v = V1v * expansionRatio;
     const P2v = P1v * V1v / V2v;
-    const V3v = V2v * Math.pow(Th / Tc, 1 / (gamma - 1));
-    const P3v = P2v * Math.pow(V2v / V3v, gamma);
-    const V4v = V1v * Math.pow(Th / Tc, 1 / (gamma - 1));
-    const P4v = P3v * V3v / V4v;
+    // 保留6位小数，避免多次幂运算导致的精度偏移
+    const V3v = parseFloat((V2v * Math.pow(Th / Tc, 1 / (gamma - 1))).toFixed(6));
+    const P3v = parseFloat((P2v * Math.pow(V2v / V3v, gamma)).toFixed(6));
+    const V4v = parseFloat((V1v * Math.pow(Th / Tc, 1 / (gamma - 1))).toFixed(6));
+    const P4v = parseFloat((P3v * V3v / V4v).toFixed(6));
     const segment1 = genIsothermal(P1v, V1v, V2v);
     const segment2 = genAdiabatic(P2v, V2v, V3v);
     const segment3 = genIsothermal(P3v, V3v, V4v);
@@ -297,11 +298,11 @@ function simulateOtto() {
     const compressionRatio = +ottoCompressionRatio.value;
     const pressureRatio = +ottoPressureRatio.value;
     const V2v = V1v / compressionRatio;
-    const P2v = P1v * Math.pow(V1v / V2v, gamma);
-    const P3v = P2v * pressureRatio;
+    const P2v = parseFloat((P1v * Math.pow(V1v / V2v, gamma)).toFixed(6));
+    const P3v = parseFloat((P2v * pressureRatio).toFixed(6));
     const V3v = V2v;
     const V4v = V1v;
-    const P4v = P3v * Math.pow(V3v / V4v, gamma);
+    const P4v = parseFloat((P3v * Math.pow(V3v / V4v, gamma)).toFixed(6));
     const segment1 = genAdiabatic(P1v, V1v, V2v);
     const segment2 = genIsochoric(P2v, P3v, V2v);
     const segment3 = genAdiabatic(P3v, V3v, V4v);
@@ -341,11 +342,11 @@ function animatePiston() {
     pistonPressure.textContent = `${Math.round(dataPoint.P)} Pa`;
     
     // 根据温度变化更新活塞内部颜色（冷→蓝，热→红）
-    const temperature = (dataPoint.P * dataPoint.V) / (n * R);
-    const tempMin = (currentScale.Pmin * currentScale.Vmin) / (n * R);
-    const tempMax = (currentScale.Pmax * currentScale.Vmax) / (n * R);
-    const tempRatio = (temperature - tempMin) / (tempMax - tempMin);
-    const hue = 240 - tempRatio * 240; // 蓝色(240) → 红色(0)
+    // 保留6位小数计算，减少精度损失
+    const temperature = parseFloat(((dataPoint.P * dataPoint.V) / (n * R)).toFixed(6));
+    const tempMin = parseFloat(((currentScale.Pmin * currentScale.Vmin) / (n * R)).toFixed(6));
+    const tempMax = parseFloat(((currentScale.Pmax * currentScale.Vmax) / (n * R)).toFixed(6));
+    const tempRatio = parseFloat(((temperature - tempMin) / (tempMax - tempMin)).toFixed(6));
     pistonCylinder.style.background = `hsl(${hue}, 60%, 85%)`;
     
     // 新增：只有高亮模式开启时才更新PV图高亮点
@@ -615,44 +616,46 @@ function calculateAndUpdateResults(segments) {
         const type = segment.type;
         let segmentW = 0;
         let segmentQ = 0;
-        // 计算功
+        // 计算功（每步保留6位小数，减少累积误差）
         for (let i = 1; i < data.length; i++) {
-            segmentW += data[i].P * (data[i].V - data[i - 1].V);
+            const stepWork = parseFloat((data[i].P * (data[i].V - data[i - 1].V)).toFixed(6));
+            segmentW = parseFloat((segmentW + stepWork).toFixed(6));
         }
-        totalW += segmentW;
-        // 计算热量
+        totalW = parseFloat((totalW + segmentW).toFixed(6));
+        // 计算热量（关键步骤保留6位小数）
         if (type === 'isothermal') {
-            segmentQ = segmentW;
+            segmentQ = parseFloat(segmentW.toFixed(6));
         } else if (type === 'isobaric') {
-            const T1 = data[0].P * data[0].V / (n * R);
-            const T2 = data.at(-1).P * data.at(-1).V / (n * R);
-            const Cp = (gamma * R) / (gamma - 1);
-            segmentQ = n * Cp * (T2 - T1);
+            const T1 = parseFloat(((data[0].P * data[0].V) / (n * R)).toFixed(6));
+            const T2 = parseFloat(((data.at(-1).P * data.at(-1).V) / (n * R)).toFixed(6));
+            const Cp = parseFloat(((gamma * R) / (gamma - 1)).toFixed(6));
+            segmentQ = parseFloat((n * Cp * (T2 - T1)).toFixed(6));
         } else if (type === 'isochoric') {
-            const T1 = data[0].P * data[0].V / (n * R);
-            const T2 = data.at(-1).P * data.at(-1).V / (n * R);
-            const Cv = R / (gamma - 1);
-            segmentQ = n * Cv * (T2 - T1);
+            const T1 = parseFloat(((data[0].P * data[0].V) / (n * R)).toFixed(6));
+            const T2 = parseFloat(((data.at(-1).P * data.at(-1).V) / (n * R)).toFixed(6));
+            const Cv = parseFloat(((R / (gamma - 1)).toFixed(6)));
+            segmentQ = parseFloat((n * Cv * (T2 - T1)).toFixed(6));
         } else if (type === 'adiabatic') {
             segmentQ = 0;
         }
-        totalQ += segmentQ;
+        totalQ = parseFloat((totalQ + segmentQ).toFixed(6));
         
         if (segmentQ > 0) {
-            Q_absorbed += segmentQ;
+            Q_absorbed = parseFloat((Q_absorbed + segmentQ).toFixed(6));
         } else if (segmentQ < 0) {
-            Q_released += Math.abs(segmentQ);
+            Q_released = parseFloat((Q_released + Math.abs(segmentQ)).toFixed(6));
         }
     });
-    // 计算内能变化和效率
-    const T1 = currentData[0].P * currentData[0].V / (n * R);
-    const T2 = currentData.at(-1).P * currentData.at(-1).V / (n * R);
-    const dU = n * (R / (gamma - 1)) * (T2 - T1);
+    // 计算内能变化和效率（保留6位小数计算）
+    const T1 = parseFloat(((currentData[0].P * currentData[0].V) / (n * R)).toFixed(6));
+    const T2 = parseFloat(((currentData.at(-1).P * currentData.at(-1).V) / (n * R)).toFixed(6));
+    const Cv = parseFloat(((R / (gamma - 1)).toFixed(6)));
+    const dU = parseFloat((n * Cv * (T2 - T1)).toFixed(6));
     let eta = 0;
     if (cycleType.value !== 'single' && Q_absorbed > 0) {
-        eta = (totalW / Q_absorbed) * 100;
+        eta = parseFloat(((totalW / Q_absorbed) * 100).toFixed(6));
     }
-    // 更新结果显示
+    // 最终显示仍保留2位小数，不改变界面效果
     Wout.innerText = totalW.toFixed(2);
     Uout.innerText = dU.toFixed(2);
     Qout.innerText = totalQ.toFixed(2);
