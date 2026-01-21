@@ -9,11 +9,11 @@ const gamma = 1.4;
 let currentData = [];
 let currentScale = {};
 let currentCycleSegments = [];
-
 // 活塞动画相关变量（新增核心）
 let pistonAnimationId = null;
 let currentAnimationFrame = 0;
-
+// 新增：高亮模式状态变量（false=曲线颜色模式，true=活塞同步高亮模式）
+let highlightMode = false;
 /* ================== DOM元素获取 ================== */
 // 基础元素
 const cycleType = document.getElementById("cycleType");
@@ -37,15 +37,14 @@ const Wout = document.getElementById("Wout");
 const Uout = document.getElementById("Uout");
 const Qout = document.getElementById("Qout");
 const etaOut = document.getElementById("etaOut");
-
+// 新增：高亮切换按钮
+const toggleHighlightBtn = document.getElementById("toggleHighlightBtn");
 // 活塞动画元素（新增）
 const pistonCylinder = document.getElementById("pistonCylinder");
 const pistonHead = document.getElementById("pistonHead");
 const pistonPressure = document.getElementById("pistonPressure");
-
 // 知识点面板元素（新增）
 const knowledgeContent = document.getElementById("knowledgeContent");
-
 /* ================== 知识点数据（新增） ================== */
 const knowledgePoints = {
     isothermal: [
@@ -79,7 +78,6 @@ const knowledgePoints = {
         { title: "效率公式", content: "η = 1 - 1/r^(γ-1)，r为压缩比" }
     ]
 };
-
 /* ================== 介绍文本数据 ================== */
 const processIntroductions = {
     isothermal: {
@@ -99,7 +97,6 @@ const processIntroductions = {
         content: "绝热过程是指系统与外界没有热量交换的过程。在绝热过程中，系统对外做功全部来自内能的减少，或外界对系统做功全部转化为系统的内能。理想气体的绝热过程满足PV^γ = 常数，其中γ为比热容比。"
     }
 };
-
 const cycleIntroductions = {
     single: {
         title: "单一过程",
@@ -114,19 +111,15 @@ const cycleIntroductions = {
         content: "奥托循环是四冲程内燃机的工作循环，由两个绝热过程和两个等容过程组成。包括进气、压缩、做功和排气四个冲程，是汽油机的工作原理基础。其热效率主要取决于压缩比，压缩比越高效率越高。"
     }
 };
-
 /* ================== 类型选择与参数组联动 ================== */
 function updateParamGroupVisibility() {
     const cycle = cycleType.value;
-
     // 隐藏所有参数组
     document.querySelectorAll('.param-group').forEach(group => {
         group.classList.remove('active');
     });
-
     // 显示当前循环类型对应的参数组
     document.getElementById(`${cycle}ParamGroup`).classList.add('active');
-
     // 控制过程类型选择的显示/隐藏
     if (cycle === 'single') {
         processType.style.display = 'block';
@@ -135,27 +128,22 @@ function updateParamGroupVisibility() {
         processType.style.display = 'none';
         processTypeLabel.style.display = 'none';
     }
-
     // 更新介绍文本和知识点
     updateIntroduction();
     updateKnowledgePoints();
-
     // 单一过程时更新输入框状态
     if (cycle === 'single') {
         updateSingleProcessInputs();
     }
-
     // 隐藏/显示效率结果
     etaOut.parentElement.style.display = cycle === 'single' ? 'none' : 'inline-block';
 }
-
 // 单一过程输入框联动更新
 function updateSingleProcessInputs() {
     const type = processType.value;
     P2.disabled = false;
     V2.disabled = false;
     P2.value = "";
-
     if (type === "isothermal") {
         P2.disabled = true;
         P2.value = "由等温方程计算";
@@ -173,29 +161,24 @@ function updateSingleProcessInputs() {
         P2.value = "由绝热方程计算";
     }
 }
-
 // 更新介绍文本
 function updateIntroduction() {
     const cycle = cycleType.value;
     let intro;
-
     if (cycle === 'single') {
         intro = processIntroductions[processType.value];
     } else {
         intro = cycleIntroductions[cycle];
     }
-
     // 淡入淡出动画
     const introContent = document.getElementById('introContent');
     introContent.classList.add('fade-out');
-
     setTimeout(() => {
         document.getElementById('introTitle').textContent = intro.title;
         introContent.textContent = intro.content;
         introContent.classList.remove('fade-out');
     }, 500);
 }
-
 // 更新知识点面板（新增）
 function updateKnowledgePoints() {
     const cycle = cycleType.value;
@@ -215,20 +198,16 @@ function updateKnowledgePoints() {
         knowledgeContent.appendChild(item);
     });
 }
-
 /* ================== 坐标映射 ================== */
 function xMap(V, Vmin, Vmax) {
     return 60 + (V - Vmin) / (Vmax - Vmin) * (canvas.width - 120);
 }
-
 function yMap(P, Pmin, Pmax) {
     return canvas.height - 50 - (P - Pmin) / (Pmax - Pmin) * (canvas.height - 100);
 }
-
 /* ================== 绘制坐标轴 ================== */
 function drawAxes() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-
     // 绘制坐标轴
     ctx.strokeStyle = "#E6F5E6";
     ctx.lineWidth = 2;
@@ -238,7 +217,6 @@ function drawAxes() {
     ctx.moveTo(50, canvas.height - 50);
     ctx.lineTo(50, 30);
     ctx.stroke();
-
     // 绘制坐标轴标签
     ctx.fillStyle = "#555555";
     ctx.font = "14px 'Noto Sans SC', sans-serif";
@@ -249,7 +227,6 @@ function drawAxes() {
     ctx.fillText("P (Pa)", 0, 0);
     ctx.restore();
 }
-
 /* ================== 生成过程数据 ================== */
 // 等温过程
 function genIsothermal(P1, V1, V2, steps = 150) {
@@ -262,7 +239,6 @@ function genIsothermal(P1, V1, V2, steps = 150) {
     }
     return { data: arr, type: 'isothermal' };
 }
-
 // 等压过程
 function genIsobaric(P, V1, V2, steps = 150) {
     let arr = [];
@@ -273,7 +249,6 @@ function genIsobaric(P, V1, V2, steps = 150) {
     }
     return { data: arr, type: 'isobaric' };
 }
-
 // 等容过程
 function genIsochoric(P1, P2, V, steps = 150) {
     let arr = [];
@@ -284,7 +259,6 @@ function genIsochoric(P1, P2, V, steps = 150) {
     }
     return { data: arr, type: 'isochoric' };
 }
-
 // 绝热过程
 function genAdiabatic(P1, V1, V2, steps = 150) {
     let arr = [];
@@ -296,7 +270,6 @@ function genAdiabatic(P1, V1, V2, steps = 150) {
     }
     return { data: arr, type: 'adiabatic' };
 }
-
 /* ================== 循环生成 ================== */
 // 卡诺循环
 function simulateCarnot() {
@@ -305,44 +278,36 @@ function simulateCarnot() {
     const Th = +carnotTh.value;
     const Tc = +carnotTc.value;
     const expansionRatio = +carnotExpansionRatio.value;
-
     const V2v = V1v * expansionRatio;
     const P2v = P1v * V1v / V2v;
     const V3v = V2v * Math.pow(Th / Tc, 1 / (gamma - 1));
     const P3v = P2v * Math.pow(V2v / V3v, gamma);
     const V4v = V1v * Math.pow(Th / Tc, 1 / (gamma - 1));
     const P4v = P3v * V3v / V4v;
-
     const segment1 = genIsothermal(P1v, V1v, V2v);
     const segment2 = genAdiabatic(P2v, V2v, V3v);
     const segment3 = genIsothermal(P3v, V3v, V4v);
     const segment4 = genAdiabatic(P4v, V4v, V1v);
-
     return [segment1, segment2, segment3, segment4];
 }
-
 // 奥托循环
 function simulateOtto() {
     const P1v = +ottoP1.value;
     const V1v = +ottoV1.value;
     const compressionRatio = +ottoCompressionRatio.value;
     const pressureRatio = +ottoPressureRatio.value;
-
     const V2v = V1v / compressionRatio;
     const P2v = P1v * Math.pow(V1v / V2v, gamma);
     const P3v = P2v * pressureRatio;
     const V3v = V2v;
     const V4v = V1v;
     const P4v = P3v * Math.pow(V3v / V4v, gamma);
-
     const segment1 = genAdiabatic(P1v, V1v, V2v);
     const segment2 = genIsochoric(P2v, P3v, V2v);
     const segment3 = genAdiabatic(P3v, V3v, V4v);
     const segment4 = genIsochoric(P4v, P1v, V4v);
-
     return [segment1, segment2, segment3, segment4];
 }
-
 /* ================== 活塞动画核心函数（新增） ================== */
 // 初始化活塞动画
 function initPistonAnimation() {
@@ -354,7 +319,6 @@ function initPistonAnimation() {
     currentAnimationFrame = 0;
     animatePiston();
 }
-
 // 活塞动画主函数
 function animatePiston() {
     if (currentData.length === 0) {
@@ -384,18 +348,23 @@ function animatePiston() {
     const hue = 240 - tempRatio * 240; // 蓝色(240) → 红色(0)
     pistonCylinder.style.background = `hsl(${hue}, 60%, 85%)`;
     
-    // 更新PV图上的高亮点（同步核心）
-    highlightCurrentPoint(frameIndex);
+    // 新增：只有高亮模式开启时才更新PV图高亮点
+    if (highlightMode) {
+        highlightCurrentPoint(frameIndex);
+    } else if (currentCycleSegments.length > 0) {
+        // 高亮模式关闭时，绘制原始彩色曲线
+        redrawOriginalCurves();
+    }
     
     // 继续动画
     currentAnimationFrame++;
     pistonAnimationId = requestAnimationFrame(animatePiston);
 }
-
 // PV图高亮点绘制（同步活塞动画）
 function highlightCurrentPoint(index) {
     // 重新绘制曲线和坐标轴
     drawAxes();
+    // 高亮模式下使用统一曲线颜色
     ctx.strokeStyle = "#F8E0E6";
     ctx.lineWidth = 3;
     ctx.beginPath();
@@ -426,13 +395,64 @@ function highlightCurrentPoint(index) {
     ctx.arc(x, y, 6, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
+    
+    // 绘制过程标签
+    drawSegmentLabels(currentCycleSegments);
 }
-
+// 新增：重新绘制原始彩色曲线
+function redrawOriginalCurves() {
+    drawAxes();
+    currentCycleSegments.forEach((segment, index) => {
+        const color = getProcessColor(segment.type);
+        const data = segment.data;
+        
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        data.forEach((d, i) => {
+            const x = xMap(d.V, currentScale.Vmin, currentScale.Vmax);
+            const y = yMap(d.P, currentScale.Pmin, currentScale.Pmax);
+            if (i === 0) {
+                ctx.moveTo(x, y);
+            } else {
+                ctx.lineTo(x, y);
+            }
+        });
+        ctx.stroke();
+    });
+    drawSegmentLabels(currentCycleSegments);
+    drawPoint(currentData[0], "起点");
+    drawPoint(currentData.at(-1), "终点", true);
+}
+/* ================== 新增：高亮模式切换函数 ================== */
+function toggleHighlightMode() {
+    highlightMode = !highlightMode;
+    if (highlightMode) {
+        toggleHighlightBtn.textContent = "关闭活塞同步高亮";
+        toggleHighlightBtn.style.background = "linear-gradient(135deg, #F8E0E6, #E6616B)";
+        // 立即更新视图
+        if (currentData.length > 0) {
+            highlightCurrentPoint(currentAnimationFrame % currentData.length);
+        }
+    } else {
+        toggleHighlightBtn.textContent = "开启活塞同步高亮";
+        toggleHighlightBtn.style.background = "linear-gradient(135deg, #E6F5E6, #6C5B7B)";
+        // 恢复原始彩色曲线
+        if (currentData.length > 0) {
+            redrawOriginalCurves();
+        }
+    }
+}
 /* ================== 主模拟 ================== */
 function startSimulation() {
+    // 修复问题2：重置核心数据，避免缓存影响
+    currentData = [];
+    currentScale = {};
+    currentCycleSegments = [];
+    currentAnimationFrame = 0;
+    
     let segments = [];
     const cycle = cycleType.value;
-
     // 生成模拟数据
     if (cycle === "carnot") {
         segments = simulateCarnot();
@@ -444,7 +464,6 @@ function startSimulation() {
         const V1v = +V1.value;
         const P2v = +P2.value;
         const V2v = +V2.value;
-
         switch(type) {
             case "isothermal":
                 segments.push(genIsothermal(P1v, V1v, V2v));
@@ -460,7 +479,6 @@ function startSimulation() {
                 break;
         }
     }
-
     currentCycleSegments = segments;
     const allData = segments.flatMap(segment => segment.data);
     
@@ -471,10 +489,8 @@ function startSimulation() {
     const Pmax = Math.max(...Ps) * 1.1;
     const Vmin = Math.min(...Vs) * 0.9;
     const Vmax = Math.max(...Vs) * 1.1;
-
     currentData = allData;
     currentScale = { Pmin, Pmax, Vmin, Vmax };
-
     // 绘制并动画
     drawAxes();
     let totalSteps = allData.length - 1;
@@ -484,10 +500,8 @@ function startSimulation() {
     let currentSegmentIndex = 0;
     let segmentData = segments[currentSegmentIndex].data;
     let segmentEndIndex = segmentData.length - 1;
-
     // 绘制各段的过程标签
     drawSegmentLabels(segments);
-
     function animate() {
         if (i >= totalSteps) {
             drawPoint(allData[0], "起点");
@@ -497,13 +511,11 @@ function startSimulation() {
             initPistonAnimation();
             return;
         }
-
         if (i > segmentEndIndex && currentSegmentIndex < segments.length - 1) {
             currentSegmentIndex++;
             segmentData = segments[currentSegmentIndex].data;
             segmentEndIndex += segmentData.length;
         }
-
         const color = getProcessColor(segments[currentSegmentIndex].type);
         
         ctx.strokeStyle = color;
@@ -512,14 +524,11 @@ function startSimulation() {
         ctx.moveTo(xMap(allData[i].V, Vmin, Vmax), yMap(allData[i].P, Pmin, Pmax));
         ctx.lineTo(xMap(allData[i + 1].V, Vmin, Vmax), yMap(allData[i + 1].P, Pmin, Pmax));
         ctx.stroke();
-
         i++;
         setTimeout(animate, frameInterval);
     }
-
     animate();
 }
-
 /* ================== 辅助函数 ================== */
 // 获取不同过程的颜色
 function getProcessColor(processType) {
@@ -531,7 +540,6 @@ function getProcessColor(processType) {
     };
     return colors[processType] || "#F8E0E6";
 }
-
 // 绘制各段的过程标签
 function drawSegmentLabels(segments) {
     const processLabels = {
@@ -540,7 +548,6 @@ function drawSegmentLabels(segments) {
         isochoric: "等容",
         adiabatic: "绝热"
     };
-
     segments.forEach((segment, index) => {
         const midIndex = Math.floor(segment.data.length / 2);
         const midPoint = segment.data[midIndex];
@@ -558,17 +565,14 @@ function drawSegmentLabels(segments) {
         );
     });
 }
-
 // 绘制起点/终点
 function drawPoint(d, label, isPulse = false) {
     const x = xMap(d.V, currentScale.Vmin, currentScale.Vmax);
     const y = yMap(d.P, currentScale.Pmin, currentScale.Pmax);
-
     ctx.fillStyle = isPulse ? "#F8E0E6" : "#F0E6D2";
     ctx.beginPath();
     ctx.arc(x, y, 5, 0, Math.PI * 2);
     ctx.fill();
-
     if (isPulse) {
         const pulseCircle = new Path2D();
         pulseCircle.arc(x, y, 8, 0, Math.PI * 2);
@@ -596,31 +600,26 @@ function drawPoint(d, label, isPulse = false) {
         }
         pulseAnimation();
     }
-
     ctx.fillStyle = "#555555";
     ctx.font = "12px 'Noto Sans SC', sans-serif";
     ctx.fillText(label, x + 6, y - 6);
 }
-
 // 计算并更新结果
 function calculateAndUpdateResults(segments) {
     let totalW = 0;
     let totalQ = 0;
     let Q_absorbed = 0;
     let Q_released = 0;
-
     segments.forEach(segment => {
         const data = segment.data;
         const type = segment.type;
         let segmentW = 0;
         let segmentQ = 0;
-
         // 计算功
         for (let i = 1; i < data.length; i++) {
             segmentW += data[i].P * (data[i].V - data[i - 1].V);
         }
         totalW += segmentW;
-
         // 计算热量
         if (type === 'isothermal') {
             segmentQ = segmentW;
@@ -637,7 +636,6 @@ function calculateAndUpdateResults(segments) {
         } else if (type === 'adiabatic') {
             segmentQ = 0;
         }
-
         totalQ += segmentQ;
         
         if (segmentQ > 0) {
@@ -646,7 +644,6 @@ function calculateAndUpdateResults(segments) {
             Q_released += Math.abs(segmentQ);
         }
     });
-
     // 计算内能变化和效率
     const T1 = currentData[0].P * currentData[0].V / (n * R);
     const T2 = currentData.at(-1).P * currentData.at(-1).V / (n * R);
@@ -655,36 +652,30 @@ function calculateAndUpdateResults(segments) {
     if (cycleType.value !== 'single' && Q_absorbed > 0) {
         eta = (totalW / Q_absorbed) * 100;
     }
-
     // 更新结果显示
     Wout.innerText = totalW.toFixed(2);
     Uout.innerText = dU.toFixed(2);
     Qout.innerText = totalQ.toFixed(2);
     etaOut.innerText = eta.toFixed(2);
 }
-
 /* ================== 鼠标悬停读数 ================== */
 const tooltip = document.getElementById("tooltip");
 canvas.addEventListener("mousemove", e => {
     if (!currentData.length) return;
-
     const rect = canvas.getBoundingClientRect();
     const mx = e.clientX - rect.left;
     const my = e.clientY - rect.top;
-
     let best = null;
     let minDist = 10;
     for (let d of currentData) {
         const x = xMap(d.V, currentScale.Vmin, currentScale.Vmax);
         const y = yMap(d.P, currentScale.Pmin, currentScale.Pmax);
         const dist = Math.hypot(mx - x, my - y);
-
         if (dist < minDist) {
             minDist = dist;
             best = d;
         }
     }
-
     if (best) {
         tooltip.style.display = "block";
         tooltip.style.left = e.pageX + 12 + "px";
@@ -694,43 +685,45 @@ canvas.addEventListener("mousemove", e => {
         tooltip.style.display = "none";
     }
 });
-
 canvas.addEventListener("mouseleave", () => tooltip.style.display = "none");
-
 /* ================== 事件绑定 ================== */
 cycleType.addEventListener("change", updateParamGroupVisibility);
 processType.addEventListener("change", updateSingleProcessInputs);
 processType.addEventListener("change", updateIntroduction);
 processType.addEventListener("change", updateKnowledgePoints);
-
 window.addEventListener("resize", () => {
     canvas.width = canvas.parentElement.clientWidth;
     if (currentData.length) {
         drawAxes();
-        currentCycleSegments.forEach((segment, index) => {
-            const color = getProcessColor(segment.type);
-            const data = segment.data;
-            
-            ctx.strokeStyle = color;
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            data.forEach((d, i) => {
-                if (i === 0) {
-                    ctx.moveTo(xMap(d.V, currentScale.Vmin, currentScale.Vmax), yMap(d.P, currentScale.Pmin, currentScale.Pmax));
-                } else {
-                    ctx.lineTo(xMap(d.V, currentScale.Vmin, currentScale.Vmax), yMap(d.P, currentScale.Pmin, currentScale.Pmax));
-                }
+        // 窗口 resize 时根据当前模式重新绘制
+        if (highlightMode) {
+            highlightCurrentPoint(currentAnimationFrame % currentData.length);
+        } else {
+            currentCycleSegments.forEach((segment, index) => {
+                const color = getProcessColor(segment.type);
+                const data = segment.data;
+                
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                data.forEach((d, i) => {
+                    if (i === 0) {
+                        ctx.moveTo(xMap(d.V, currentScale.Vmin, currentScale.Vmax), yMap(d.P, currentScale.Pmin, currentScale.Pmax));
+                    } else {
+                        ctx.lineTo(xMap(d.V, currentScale.Vmin, currentScale.Vmax), yMap(d.P, currentScale.Pmin, currentScale.Pmax));
+                    }
+                });
+                ctx.stroke();
             });
-            ctx.stroke();
-        });
-        drawSegmentLabels(currentCycleSegments);
-        drawPoint(currentData[0], "起点");
-        drawPoint(currentData.at(-1), "终点", true);
+            drawSegmentLabels(currentCycleSegments);
+            drawPoint(currentData[0], "起点");
+            drawPoint(currentData.at(-1), "终点", true);
+        }
     }
 });
-
 runBtn.addEventListener("click", startSimulation);
-
+// 新增：绑定高亮切换按钮事件
+toggleHighlightBtn.addEventListener("click", toggleHighlightMode);
 // 监听页面滚动，实现背景视差移动
 window.addEventListener('scroll', function() {
   // 1. 获取滚动距离（页面向下滚动的像素值）
@@ -745,7 +738,6 @@ window.addEventListener('scroll', function() {
   // 4. 应用到背景图的位置（仅Y轴移动，也可加X轴：${50 + moveRatio/2}% ${50 + moveRatio}%）
   document.querySelector('.bg-blur').style.backgroundPosition = `50% ${50 + moveRatio}%`;
 });
-
 /* ================== 初始化 ================== */
 updateParamGroupVisibility();
 updateSingleProcessInputs();
