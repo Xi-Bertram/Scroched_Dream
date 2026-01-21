@@ -4,7 +4,6 @@
     padding: 0;
     box-sizing: border-box;
 }
-
 /* 1. 新增：模糊背景层（核心） */
 .bg-blur-container {
   position: fixed; /* 固定定位，不随页面滚动 */
@@ -15,7 +14,6 @@
   z-index: -1; /* 放在所有内容下方 */
   overflow: hidden; /* 隐藏放大后的边缘 */
 }
-
 /* 2. 新增：模糊背景图（毛玻璃+视差） */
 .bg-blur {
   width: 100%;
@@ -28,7 +26,6 @@
   transform: scale(1.05); /* 轻微放大，避免模糊后出现边缘空白 */
   transition: background-position 0.15s ease; /* 滚动时平滑移动 */
 }
-
 body {
     font-family: 'Noto Sans SC', "Segoe UI", sans-serif;
     color: #4c676a;
@@ -42,7 +39,6 @@ body {
     padding: 20px;
     position: relative;
 }
-
 /* 标题样式 */
 .title {
     text-align: center;
@@ -54,7 +50,6 @@ body {
     letter-spacing: 1px;
     position: relative;
 }
-
 .title::after {
     content: '';
     display: block;
@@ -64,7 +59,6 @@ body {
     margin: 10px auto 0;
     border-radius: 1px;
 }
-
 /* 容器布局（调整模块比例适配背景） */
 .container {
     display: flex;
@@ -75,7 +69,6 @@ body {
     max-width: 1600px;
     margin: 0 auto;
 }
-
 /* 通用面板样式 */
 .panel {
     background: rgba(252,252,248,0.85);
@@ -84,12 +77,10 @@ body {
     padding: 20px;
     border: 1px solid rgba(230,245,230,0.3);
 }
-
 /* 介绍面板（调整宽度） */
 .intro-panel {
     width: 280px;
 }
-
 .intro-content {
     margin-top: 15px;
     line-height: 1.6;
@@ -98,16 +89,13 @@ body {
     transition: opacity 0.5s ease-in-out;
     color: #58727b;
 }
-
 .intro-content.fade-out {
     opacity: 0;
 }
-
 /* 知识点强化面板（新增） */
 .knowledge-panel {
     width: 280px;
 }
-
 .knowledge-title {
     font-size: 18px;
     margin-bottom: 15px;
@@ -115,28 +103,23 @@ body {
     border-bottom: 1px solid #e6f5e6;
     padding-bottom: 8px;
 }
-
 .knowledge-item {
     margin-bottom: 12px;
     font-size: 14px;
 }
-
 .knowledge-item strong {
     color: #58727b;
 }
-
 /* 类型选择面板 */
 .type-select {
     width: 250px;
 }
-
 .type-select label {
     display: block;
     margin-top: 12px;
     font-size: 14px;
     color: #58727b;
 }
-
 .type-select select {
     width: 100%;
     padding: 8px 12px;
@@ -148,34 +131,28 @@ body {
     font-family: 'Noto Sans SC', sans-serif;
     transition: border-color 0.3s ease;
 }
-
 .type-select select:focus {
     outline: none;
     border-color: #F8E0E6;
     box-shadow: 0 0 0 2px rgba(248,224,230,0.2);
 }
-
 /* 参数控制面板 */
 .param-control {
     width: 250px;
 }
-
 .param-group {
     display: none;
     margin-top: 10px;
 }
-
 .param-group.active {
     display: block;
 }
-
 .param-control label {
     display: block;
     margin-top: 12px;
     font-size: 14px;
     color: #58727b;
 }
-
 .param-control input {
     width: 100%;
     padding: 8px 12px;
@@ -187,18 +164,15 @@ body {
     font-family: 'Noto Sans SC', sans-serif;
     transition: border-color 0.3s ease;
 }
-
 .param-control input:disabled {
     opacity: 0.7;
     background: rgba(252,252,248,0.5);
 }
-
 .param-control input:focus {
     outline: none;
     border-color: #F8E0E6;
     box-shadow: 0 0 0 2px rgba(248,224,230,0.2);
 }
-
 /* 模拟按钮样式 */
 .sim-btn {
     margin-top: 18px;
@@ -215,24 +189,20 @@ body {
     transition: all 0.3s ease;
     box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
-
 .sim-btn:hover {
     background: linear-gradient(135deg, #F8E0E6, #F0E6D2);
     transform: scale(1.03);
     box-shadow: 0 3px 6px rgba(0,0,0,0.08);
 }
-
 .sim-btn:active {
     transform: scale(1.01);
 }
-
 /* 绘图区样式（调整最小宽高） */
 .canvas-panel {
     flex: 1;
     min-width: 600px;
     min-height: 450px;
 }
-
 #pvCanvas {
     width: 100%;
     height: 100%;
@@ -240,7 +210,6 @@ body {
     background: rgba(252,252,248,0.95);
     border: 1px solid rgba(230,245,230,0.5);
 }
-
 /* 活塞动画模块（新增核心样式） */
 .piston-container {
     width: 100%;
@@ -253,7 +222,6 @@ body {
     border: 1px solid rgba(230,245,230,0.3);
     text-align: center;
 }
-
 .piston-animation {
     width: 100%;
     height: 200px;
@@ -263,7 +231,6 @@ body {
     background: rgba(240,230,210,0.2);
     border-radius: 8px;
 }
-
 .piston-cylinder {
     width: 120px;
     height: 180px;
@@ -276,7 +243,6 @@ body {
     overflow: hidden;
     transition: background 0.3s ease;
 }
-
 .piston-head {
     width: 110px;
     height: 15px;
@@ -288,7 +254,6 @@ body {
     border-radius: 3px;
     transition: bottom 0.1s linear;
 }
-
 .piston-rod {
     width: 8px;
     height: 30px;
@@ -298,7 +263,6 @@ body {
     left: 50%;
     transform: translateX(-50%);
 }
-
 .piston-pressure {
     position: absolute;
     top: 50%;
@@ -308,14 +272,12 @@ body {
     font-weight: bold;
     color: #58727b;
 }
-
 /* 结果面板样式 */
 .result {
     margin: 20px;
     text-align: center;
     font-size: 16px;
 }
-
 .result-item {
     display: inline-block;
     margin: 0 15px;
@@ -325,7 +287,6 @@ body {
     box-shadow: 0 2px 6px rgba(0,0,0,0.1);
     border: 1px solid rgba(230,245,230,0.3);
 }
-
 /* 悬停提示样式 */
 #tooltip {
     position: absolute;
@@ -340,7 +301,6 @@ body {
     box-shadow: 0 2px 6px rgba(0,0,0,0.08);
     z-index: 100;
 }
-
 /* 入场动画 */
 @keyframes fadeInUp {
     from {
@@ -352,12 +312,10 @@ body {
         transform: translateY(0);
     }
 }
-
 .animate-in {
     opacity: 0;
     animation: fadeInUp 0.8s ease-out forwards;
 }
-
 /* PV图高亮点样式（脉冲动画） */
 .highlight-point {
     fill: #f8b195;
@@ -366,7 +324,6 @@ body {
     r: 6;
     animation: pulse 1.5s infinite;
 }
-
 @keyframes pulse {
     0% { transform: scale(1); opacity: 1; }
     50% { transform: scale(1.2); opacity: 0.8; }
